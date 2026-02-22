@@ -2,16 +2,16 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>EGM Mesai Takip Paneli - PRO</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="app">
-    <header class="header">
+  <div class="wrap">
+    <header class="top">
       <div>
         <h1>EGM Mesai Takip Paneli</h1>
-        <p class="muted">Başlat / Durdur / Kayıt — günlük geçmiş ve toplam süre</p>
+        <div class="muted">Başlat / Durdur / Kayıt — günlük geçmiş ve toplam süre</div>
       </div>
       <div class="badge" id="statusBadge">Hazır</div>
     </header>
@@ -19,8 +19,8 @@
     <section class="card">
       <div class="grid">
         <div class="field">
-          <label for="personName">Personel Adı</label>
-          <input id="personName" type="text" placeholder="Personel adı girin" autocomplete="off" />
+          <label>Personel Adı</label>
+          <input id="personel" placeholder="Personel adı girin" autocomplete="off" />
         </div>
 
         <div class="field">
@@ -30,7 +30,7 @@
 
         <div class="field">
           <label>Aktif Sayaç</label>
-          <div class="kpi" id="liveTimer">00:00:00</div>
+          <div class="kpi" id="activeTimer">00:00:00</div>
         </div>
       </div>
 
@@ -38,32 +38,27 @@
         <button class="btn primary" id="btnStart">Mesai Başlat</button>
         <button class="btn danger" id="btnStop" disabled>Mesai Bitir</button>
         <button class="btn" id="btnReset">Sıfırla</button>
-
         <div class="spacer"></div>
-
         <button class="btn" id="btnExport">CSV Dışa Aktar</button>
-        <button class="btn ghost" id="btnClearHistory">Bugün Kayıt Sil</button>
+        <button class="btn danger" id="btnClearToday">Bugün Kayıt Sil</button>
       </div>
 
-      <div class="hint">
-        Not: Veriler cihazınızın tarayıcısında saklanır (localStorage). Başka cihazdan açarsanız veriler gelmez.
+      <div class="note">
+        Not: Cihazınızda saklanır (localStorage). Müdür takibi için “başlangıç” kayıtları ayrıca Google Sheet’e yazılır.
       </div>
     </section>
 
     <section class="card">
-      <div class="cardTitle">
+      <div class="cardHead">
         <h2>Bugün Yapılan Mesailer</h2>
-        <span class="muted" id="todayDate"></span>
+        <div class="muted" id="todayText"></div>
       </div>
-
-      <ul class="history" id="historyList">
-        <li class="empty">Henüz mesai kaydı yok.</li>
-      </ul>
+      <ul class="history" id="history"></ul>
     </section>
 
-    <footer class="footer muted">
-      <span>EGM Mesai Takip Paneli - PRO</span>
-      <span>v1</span>
+    <footer class="foot">
+      <div>EGM Mesai Takip Paneli - PRO</div>
+      <div class="muted">v1</div>
     </footer>
   </div>
 
