@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EGM Mesai Takip Paneli - PRO</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div>
+        <h1>EGM Mesai Takip Paneli</h1>
+        <p class="muted">Başlat / Durdur / Kayıt — günlük geçmiş ve toplam süre</p>
+      </div>
+      <div class="badge" id="statusBadge">Hazır</div>
+    </header>
+
+    <section class="card">
+      <div class="grid">
+        <div class="field">
+          <label for="personName">Personel Adı</label>
+          <input id="personName" type="text" placeholder="Personel adı girin" autocomplete="off" />
+        </div>
+
+        <div class="field">
+          <label>Bugünkü Toplam</label>
+          <div class="kpi" id="todayTotal">00:00:00</div>
+        </div>
+
+        <div class="field">
+          <label>Aktif Sayaç</label>
+          <div class="kpi" id="liveTimer">00:00:00</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="btnStart">Mesai Başlat</button>
+        <button class="btn danger" id="btnStop" disabled>Mesai Bitir</button>
+        <button class="btn" id="btnReset">Sıfırla</button>
+
+        <div class="spacer"></div>
+
+        <button class="btn" id="btnExport">CSV Dışa Aktar</button>
+        <button class="btn ghost" id="btnClearHistory">Bugün Kayıt Sil</button>
+      </div>
+
+      <div class="hint">
+        Not: Veriler cihazınızın tarayıcısında saklanır (localStorage). Başka cihazdan açarsanız veriler gelmez.
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cardTitle">
+        <h2>Bugün Yapılan Mesailer</h2>
+        <span class="muted" id="todayDate"></span>
+      </div>
+
+      <ul class="history" id="historyList">
+        <li class="empty">Henüz mesai kaydı yok.</li>
+      </ul>
+    </section>
+
+    <footer class="footer muted">
+      <span>EGM Mesai Takip Paneli - PRO</span>
+      <span>v1</span>
+    </footer>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
