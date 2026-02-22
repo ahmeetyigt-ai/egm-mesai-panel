@@ -1,290 +1,270 @@
-(() => {
-  const STORAGE_KEY = "egm_mesai_pro_v1";
+// =========================
+// AYAR: Senin Apps Script Web App URL'in
+// =========================
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyn0rV5vGhLr3u82SPcGwMkIx3ZvzJHnOOfj38wcJwAEYOd0kExEEnHaVJvRVp3Gcdh/exec";
 
-  const el = (id) => document.getElementById(id);
+const STORAGE_KEY = "egmMesaiProV1";
 
-  const personName = el("personName");
-  const todayTotal = el("todayTotal");
-  const liveTimer = el("liveTimer");
-  const statusBadge = el("statusBadge");
-  const historyList = el("historyList");
-  const todayDate = el("todayDate");
+const elPersonel = document.getElementById("personel");
+const elTodayTotal = document.getElementById("todayTotal");
+const elActiveTimer = document.getElementById("activeTimer");
+const elHistory = document.getElementById("history");
+const elStatus = document.getElementById("statusBadge");
+const elTodayText = document.getElementById("todayText");
 
-  const btnStart = el("btnStart");
-  const btnStop = el("btnStop");
-  const btnReset = el("btnReset");
-  const btnExport = el("btnExport");
-  const btnClearHistory = el("btnClearHistory");
+const btnStart = document.getElementById("btnStart");
+const btnStop = document.getElementById("btnStop");
+const btnReset = document.getElementById("btnReset");
+const btnExport = document.getElementById("btnExport");
+const btnClearToday = document.getElementById("btnClearToday");
 
-  let interval = null;
+let tickTimer = null;
 
-  const nowISO = () => new Date().toISOString();
-  const todayKey = (d = new Date()) => d.toISOString().slice(0, 10);
+// ---------- Helpers ----------
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { personel: "", active: null, sessions: [] };
+    const data = JSON.parse(raw);
+    if (!data.sessions) data.sessions = [];
+    return data;
+  } catch {
+    return { personel: "", active: null, sessions: [] };
+  }
+}
 
-  const formatTime = (ms) => {
-    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    const pad = (n) => String(n).padStart(2, "0");
-    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function formatMs(ms) {
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+}
+
+// Türkiye saatine göre YYYY-MM-DD
+function todayTR() {
+  const now = new Date();
+  const trStr = now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" });
+  const trNow = new Date(trStr);
+  return trNow.toISOString().slice(0, 10);
+}
+
+function nowTRTime() {
+  // HH:MM:SS (TR)
+  const now = new Date();
+  return now.toLocaleTimeString("tr-TR");
+}
+
+function requirePerson() {
+  const name = (elPersonel.value || "").trim();
+  if (!name) {
+    alert("Personel adını girin.");
+    return null;
+  }
+  return name;
+}
+
+function getTodaySessions(data) {
+  const t = todayTR();
+  return data.sessions.filter(s => s.tarih === t);
+}
+
+function calcTotalMs(sessions) {
+  return sessions.reduce((acc, s) => acc + (s.durationMs || 0), 0);
+}
+
+// ---------- SHEETS: başlangıç kaydı gönder (CORS'suz) ----------
+function sendStartToSheet(personelAdi) {
+  const tarih = todayTR();
+  const baslangic = nowTRTime();
+
+  const url = SCRIPT_URL
+    + "?action=logStart"
+    + "&personel=" + encodeURIComponent(personelAdi)
+    + "&baslangic=" + encodeURIComponent(baslangic)
+    + "&tarih=" + encodeURIComponent(tarih);
+
+  // CORS'a takılmadan "ping" gibi gönderir
+  (new Image()).src = url;
+}
+
+// ---------- UI ----------
+function setStatus(text) {
+  elStatus.textContent = text;
+}
+
+function stopTick() {
+  if (tickTimer) clearInterval(tickTimer);
+  tickTimer = null;
+}
+
+function startTick() {
+  stopTick();
+  tickTimer = setInterval(updateUI, 1000);
+}
+
+function renderHistory(data) {
+  const today = todayTR();
+  elTodayText.textContent = today;
+
+  const sessions = getTodaySessions(data);
+
+  if (!sessions.length) {
+    elHistory.innerHTML = `<li><div class="muted">Henüz mesai kaydı yok.</div></li>`;
+    return;
+  }
+
+  elHistory.innerHTML = sessions.map(s => {
+    return `
+      <li>
+        <div>
+          <b>${escapeHtml(s.personel)}</b>
+          <div class="small">${escapeHtml(s.start)} → ${escapeHtml(s.end)}</div>
+        </div>
+        <div style="font-family: ui-monospace, Menlo, Consolas, monospace;">
+          ${formatMs(s.durationMs)}
+        </div>
+      </li>
+    `;
+  }).join("");
+}
+
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+}
+
+function updateUI() {
+  const data = loadData();
+
+  // personel input senkron
+  if ((elPersonel.value || "").trim() === "" && data.personel) {
+    elPersonel.value = data.personel;
+  }
+
+  // bugünkü toplam
+  const todaySessions = getTodaySessions(data);
+  const totalMs = calcTotalMs(todaySessions);
+  elTodayTotal.textContent = formatMs(totalMs);
+
+  // aktif sayaç
+  if (data.active && data.active.startEpoch) {
+    const elapsed = Date.now() - data.active.startEpoch;
+    elActiveTimer.textContent = formatMs(elapsed);
+    setStatus("Mesai açık");
+    btnStart.disabled = true;
+    btnStop.disabled = false;
+  } else {
+    elActiveTimer.textContent = "00:00:00";
+    setStatus("Hazır");
+    btnStart.disabled = false;
+    btnStop.disabled = true;
+  }
+
+  renderHistory(data);
+}
+
+// ---------- Actions ----------
+btnStart.addEventListener("click", () => {
+  const name = requirePerson();
+  if (!name) return;
+
+  const data = loadData();
+  data.personel = name;
+
+  if (data.active) {
+    alert("Zaten aktif bir mesai var.");
+    return;
+  }
+
+  // local aktif başlat
+  data.active = {
+    personel: name,
+    startEpoch: Date.now(),
+    startISO: new Date().toISOString(),
+    tarih: todayTR(),
+    startText: nowTRTime()
   };
 
-  const loadData = () => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return {
-        personel: "",
-        active: null, // { startISO: string }
-        sessions: []  // { personel, startISO, endISO, durationMs, dayKey }
-      };
-      const data = JSON.parse(raw);
-      return {
-        personel: data.personel || "",
-        active: data.active || null,
-        sessions: Array.isArray(data.sessions) ? data.sessions : []
-      };
-    } catch {
-      return { personel: "", active: null, sessions: [] };
-    }
-  };
+  saveData(data);
 
-  const saveData = (data) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  };
+  // ✅ Müdür takibi için Sheet'e başlangıç yaz
+  sendStartToSheet(name);
 
-  const getTodaySessions = (data) => {
-    const t = todayKey();
-    return data.sessions.filter(s => s.dayKey === t);
-  };
-
-  const calcTodayTotal = (data) => {
-    const todaySessions = getTodaySessions(data);
-    const done = todaySessions.reduce((sum, s) => sum + (s.durationMs || 0), 0);
-
-    // aktif oturum bugünse canlı süreyi de ekle
-    if (data.active?.startISO) {
-      const start = new Date(data.active.startISO);
-      if (todayKey(start) === todayKey()) {
-        return done + (Date.now() - start.getTime());
-      }
-    }
-    return done;
-  };
-
-  const setStatus = (state) => {
-    // state: "idle" | "running"
-    if (state === "running") {
-      statusBadge.textContent = "Mesai açık";
-      statusBadge.style.borderColor = "rgba(68,209,157,.55)";
-      statusBadge.style.background = "rgba(68,209,157,.14)";
-    } else {
-      statusBadge.textContent = "Hazır";
-      statusBadge.style.borderColor = "rgba(255,255,255,.12)";
-      statusBadge.style.background = "rgba(255,255,255,.05)";
-    }
-  };
-
-  const renderHistory = (data) => {
-    const todaySessions = getTodaySessions(data);
-    if (!todaySessions.length) {
-      historyList.innerHTML = `<li class="empty">Henüz mesai kaydı yok.</li>`;
-      return;
-    }
-
-    // en yeni üstte
-    const sorted = [...todaySessions].sort((a, b) => new Date(b.startISO) - new Date(a.startISO));
-
-    historyList.innerHTML = sorted.map((s) => {
-      const start = new Date(s.startISO);
-      const end = new Date(s.endISO);
-      const startTxt = start.toLocaleTimeString("tr-TR");
-      const endTxt = end.toLocaleTimeString("tr-TR");
-      const durTxt = formatTime(s.durationMs || 0);
-      const person = (s.personel || "").trim() || "—";
-
-      return `
-        <li>
-          <div class="itemLeft">
-            <b>${person}</b>
-            <div class="itemMeta">${startTxt} → ${endTxt}</div>
-          </div>
-          <div class="itemRight">
-            <div>${durTxt}</div>
-            <div class="pill">${s.dayKey}</div>
-          </div>
-        </li>
-      `;
-    }).join("");
-  };
-
-  const stopTick = () => {
-    if (interval) clearInterval(interval);
-    interval = null;
-  };
-
-  const startTick = () => {
-    stopTick();
-    interval = setInterval(() => {
-      const data = loadData();
-      // aktif sayaç
-      if (data.active?.startISO) {
-        const start = new Date(data.active.startISO).getTime();
-        liveTimer.textContent = formatTime(Date.now() - start);
-      } else {
-        liveTimer.textContent = "00:00:00";
-      }
-      // bugün toplam
-      todayTotal.textContent = formatTime(calcTodayTotal(data));
-    }, 250);
-  };
-
-  const syncUI = () => {
-    const data = loadData();
-    personName.value = data.personel || "";
-
-    const running = !!data.active?.startISO;
-    btnStart.disabled = running;
-    btnStop.disabled = !running;
-
-    setStatus(running ? "running" : "idle");
-
-    if (running) {
-      const start = new Date(data.active.startISO).getTime();
-      liveTimer.textContent = formatTime(Date.now() - start);
-    } else {
-      liveTimer.textContent = "00:00:00";
-    }
-
-    todayTotal.textContent = formatTime(calcTodayTotal(data));
-    renderHistory(data);
-  };
-
-  const requirePerson = () => {
-    const name = (personName.value || "").trim();
-    if (!name) {
-      alert("Lütfen personel adını girin.");
-      personName.focus();
-      return null;
-    }
-    return name;
-  };
-
-  btnStart.addEventListener("click", () => {
-    const name = requirePerson();
-    if (!name) return;
-
-    const data = loadData();
-    if (data.active) return;
-
-    data.personel = name;
-    data.active = { startISO: nowISO() };
-    saveData(data);
-
-    syncUI();
-    startTick();
-  });
-
-  btnStop.addEventListener("click", () => {
-    const data = loadData();
-    if (!data.active?.startISO) return;
-
-    const name = (personName.value || "").trim() || data.personel || "";
-
-    const startISO = data.active.startISO;
-    const endISO = nowISO();
-    const startMs = new Date(startISO).getTime();
-    const endMs = new Date(endISO).getTime();
-    const durationMs = Math.max(0, endMs - startMs);
-
-    data.sessions.push({
-      personel: name,
-      startISO,
-      endISO,
-      durationMs,
-      dayKey: todayKey(new Date(startISO))
-    });
-
-    data.personel = name;
-    data.active = null;
-    saveData(data);
-
-    syncUI();
-    startTick();
-  });
-
-  btnReset.addEventListener("click", () => {
-    const data = loadData();
-    if (data.active?.startISO) {
-      const ok = confirm("Aktif mesai var. Sıfırlamak mesaiyi iptal eder. Devam edilsin mi?");
-      if (!ok) return;
-    }
-
-    // sadece aktif sayaç sıfır (geçmişi silmez)
-    data.active = null;
-    saveData(data);
-
-    syncUI();
-    startTick();
-  });
-
-  btnClearHistory.addEventListener("click", () => {
-    const ok = confirm("Bugüne ait tüm kayıtlar silinsin mi?");
-    if (!ok) return;
-
-    const data = loadData();
-    const t = todayKey();
-    data.sessions = data.sessions.filter(s => s.dayKey !== t);
-    saveData(data);
-
-    syncUI();
-    startTick();
-  });
-
-  btnExport.addEventListener("click", () => {
-    const data = loadData();
-    if (!data.sessions.length) {
-      alert("Dışa aktarılacak kayıt yok.");
-      return;
-    }
-
-    const header = ["personel", "startISO", "endISO", "durationSeconds", "dayKey"];
-    const rows = data.sessions.map(s => ([
-      (s.personel || "").replaceAll('"', '""'),
-      s.startISO,
-      s.endISO,
-      String(Math.floor((s.durationMs || 0) / 1000)),
-      s.dayKey
-    ]));
-
-    const csv = [header, ...rows]
-      .map(r => r.map(v => `"${v}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `egm_mesai_${todayKey()}_export.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    URL.revokeObjectURL(url);
-  });
-
-  // init
-  todayDate.textContent = new Date().toLocaleDateString("tr-TR", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
-
-  // personel adı değişince kaydet
-  personName.addEventListener("input", () => {
-    const data = loadData();
-    data.personel = (personName.value || "").trim();
-    saveData(data);
-  });
-
-  // yüklenince
-  syncUI();
+  updateUI();
   startTick();
-})();
+});
+
+btnStop.addEventListener("click", () => {
+  const data = loadData();
+  if (!data.active) return;
+
+  const endEpoch = Date.now();
+  const durationMs = endEpoch - data.active.startEpoch;
+
+  const session = {
+    personel: data.active.personel,
+    tarih: data.active.tarih,
+    start: data.active.startText,
+    end: nowTRTime(),
+    durationMs
+  };
+
+  data.sessions.push(session);
+  data.active = null;
+
+  saveData(data);
+  stopTick();
+  updateUI();
+});
+
+btnReset.addEventListener("click", () => {
+  const data = loadData();
+  data.active = null;
+  saveData(data);
+  stopTick();
+  updateUI();
+});
+
+btnClearToday.addEventListener("click", () => {
+  if (!confirm("Bugünkü kayıtlar silinsin mi?")) return;
+  const data = loadData();
+  const today = todayTR();
+  data.sessions = data.sessions.filter(s => s.tarih !== today);
+  saveData(data);
+  updateUI();
+});
+
+btnExport.addEventListener("click", () => {
+  const data = loadData();
+  const today = todayTR();
+  const rows = [["personel","tarih","start","end","duration"]];
+  data.sessions.filter(s => s.tarih === today).forEach(s => {
+    rows.push([s.personel, s.tarih, s.start, s.end, formatMs(s.durationMs)]);
+  });
+
+  const csv = rows.map(r => r.map(x => `"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `mesai_${today}.csv`;
+  a.click();
+});
+
+// init
+window.addEventListener("load", () => {
+  updateUI();
+  startTick();
+});
