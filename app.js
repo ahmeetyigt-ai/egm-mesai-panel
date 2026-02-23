@@ -1,270 +1,146 @@
-// =========================
-// AYAR: Senin Apps Script Web App URL'in
-// =========================
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyn0rV5vGhLr3u82SPcGwMkIx3ZvzJHnOOfj38wcJwAEYOd0kExEEnHaVJvRVp3Gcdh/exec";
 
-const STORAGE_KEY = "egmMesaiProV1";
+const STORAGE_KEY = "egmMesaiProV2";
 
 const elPersonel = document.getElementById("personel");
 const elTodayTotal = document.getElementById("todayTotal");
 const elActiveTimer = document.getElementById("activeTimer");
 const elHistory = document.getElementById("history");
 const elStatus = document.getElementById("statusBadge");
-const elTodayText = document.getElementById("todayText");
 
 const btnStart = document.getElementById("btnStart");
 const btnStop = document.getElementById("btnStop");
 const btnReset = document.getElementById("btnReset");
-const btnExport = document.getElementById("btnExport");
-const btnClearToday = document.getElementById("btnClearToday");
 
-let tickTimer = null;
+let t = null;
 
-// ---------- Helpers ----------
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { personel: "", active: null, sessions: [] };
-    const data = JSON.parse(raw);
-    if (!data.sessions) data.sessions = [];
-    return data;
-  } catch {
-    return { personel: "", active: null, sessions: [] };
-  }
+function loadData(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {personel:"",active:null,sessions:[]}; }
+  catch { return {personel:"",active:null,sessions:[]}; }
+}
+function saveData(d){ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+function pad2(n){ return String(n).padStart(2,"0"); }
+function fmt(ms){
+  const s = Math.floor(ms/1000);
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const ss = s%60;
+  return `${pad2(h)}:${pad2(m)}:${pad2(ss)}`;
 }
 
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
-function pad2(n) {
-  return String(n).padStart(2, "0");
-}
-
-function formatMs(ms) {
-  const total = Math.floor(ms / 1000);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
-}
-
-// Türkiye saatine göre YYYY-MM-DD
-function todayTR() {
+function todayTR(){
   const now = new Date();
-  const trStr = now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" });
-  const trNow = new Date(trStr);
-  return trNow.toISOString().slice(0, 10);
+  const tr = new Date(now.toLocaleString("en-US",{timeZone:"Europe/Istanbul"}));
+  return tr.toISOString().slice(0,10);
+}
+function timeTR(){
+  return new Date().toLocaleTimeString("tr-TR");
 }
 
-function nowTRTime() {
-  // HH:MM:SS (TR)
-  const now = new Date();
-  return now.toLocaleTimeString("tr-TR");
+function ping(url){
+  (new Image()).src = url; // CORS yok
 }
 
-function requirePerson() {
-  const name = (elPersonel.value || "").trim();
-  if (!name) {
-    alert("Personel adını girin.");
-    return null;
-  }
-  return name;
+function sendStart(personel){
+  const url = SCRIPT_URL + "?action=logStart"
+    + "&personel=" + encodeURIComponent(personel)
+    + "&baslangic=" + encodeURIComponent(timeTR())
+    + "&tarih=" + encodeURIComponent(todayTR());
+  ping(url);
 }
 
-function getTodaySessions(data) {
-  const t = todayTR();
-  return data.sessions.filter(s => s.tarih === t);
+function sendEnd(personel){
+  const url = SCRIPT_URL + "?action=logEnd"
+    + "&personel=" + encodeURIComponent(personel)
+    + "&bitis=" + encodeURIComponent(timeTR())
+    + "&tarih=" + encodeURIComponent(todayTR());
+  ping(url);
 }
 
-function calcTotalMs(sessions) {
-  return sessions.reduce((acc, s) => acc + (s.durationMs || 0), 0);
-}
+function update(){
+  const d = loadData();
+  if (!elPersonel.value.trim() && d.personel) elPersonel.value = d.personel;
 
-// ---------- SHEETS: başlangıç kaydı gönder (CORS'suz) ----------
-function sendStartToSheet(personelAdi) {
-  const tarih = todayTR();
-  const baslangic = nowTRTime();
-
-  const url = SCRIPT_URL
-    + "?action=logStart"
-    + "&personel=" + encodeURIComponent(personelAdi)
-    + "&baslangic=" + encodeURIComponent(baslangic)
-    + "&tarih=" + encodeURIComponent(tarih);
-
-  // CORS'a takılmadan "ping" gibi gönderir
-  (new Image()).src = url;
-}
-
-// ---------- UI ----------
-function setStatus(text) {
-  elStatus.textContent = text;
-}
-
-function stopTick() {
-  if (tickTimer) clearInterval(tickTimer);
-  tickTimer = null;
-}
-
-function startTick() {
-  stopTick();
-  tickTimer = setInterval(updateUI, 1000);
-}
-
-function renderHistory(data) {
   const today = todayTR();
-  elTodayText.textContent = today;
+  const todaySessions = d.sessions.filter(s=>s.tarih===today);
+  const total = todaySessions.reduce((a,s)=>a+s.ms,0);
+  elTodayTotal.textContent = fmt(total);
 
-  const sessions = getTodaySessions(data);
-
-  if (!sessions.length) {
-    elHistory.innerHTML = `<li><div class="muted">Henüz mesai kaydı yok.</div></li>`;
-    return;
-  }
-
-  elHistory.innerHTML = sessions.map(s => {
-    return `
-      <li>
-        <div>
-          <b>${escapeHtml(s.personel)}</b>
-          <div class="small">${escapeHtml(s.start)} → ${escapeHtml(s.end)}</div>
-        </div>
-        <div style="font-family: ui-monospace, Menlo, Consolas, monospace;">
-          ${formatMs(s.durationMs)}
-        </div>
-      </li>
-    `;
-  }).join("");
-}
-
-function escapeHtml(s){
-  return String(s)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#39;");
-}
-
-function updateUI() {
-  const data = loadData();
-
-  // personel input senkron
-  if ((elPersonel.value || "").trim() === "" && data.personel) {
-    elPersonel.value = data.personel;
-  }
-
-  // bugünkü toplam
-  const todaySessions = getTodaySessions(data);
-  const totalMs = calcTotalMs(todaySessions);
-  elTodayTotal.textContent = formatMs(totalMs);
-
-  // aktif sayaç
-  if (data.active && data.active.startEpoch) {
-    const elapsed = Date.now() - data.active.startEpoch;
-    elActiveTimer.textContent = formatMs(elapsed);
-    setStatus("Mesai açık");
+  if (d.active){
+    elStatus.textContent = "Mesai açık";
     btnStart.disabled = true;
     btnStop.disabled = false;
+    elActiveTimer.textContent = fmt(Date.now()-d.active.startEpoch);
   } else {
-    elActiveTimer.textContent = "00:00:00";
-    setStatus("Hazır");
+    elStatus.textContent = "Hazır";
     btnStart.disabled = false;
     btnStop.disabled = true;
+    elActiveTimer.textContent = "00:00:00";
   }
 
-  renderHistory(data);
+  elHistory.innerHTML = todaySessions.length ? todaySessions.map(s=>`
+    <li>
+      <div><b>${s.personel}</b><div class="small">${s.start} → ${s.end}</div></div>
+      <div style="font-family:ui-monospace,Menlo,Consolas,monospace">${fmt(s.ms)}</div>
+    </li>
+  `).join("") : `<li><div class="muted">Henüz mesai kaydı yok.</div></li>`;
 }
 
-// ---------- Actions ----------
-btnStart.addEventListener("click", () => {
-  const name = requirePerson();
-  if (!name) return;
+function tick(){
+  clearInterval(t);
+  t = setInterval(update,1000);
+}
 
-  const data = loadData();
-  data.personel = name;
+btnStart.addEventListener("click", ()=>{
+  const personel = elPersonel.value.trim();
+  if(!personel) return alert("Personel adı girin.");
 
-  if (data.active) {
-    alert("Zaten aktif bir mesai var.");
-    return;
-  }
+  const d = loadData();
+  if(d.active) return alert("Zaten aktif mesai var.");
 
-  // local aktif başlat
-  data.active = {
-    personel: name,
-    startEpoch: Date.now(),
-    startISO: new Date().toISOString(),
-    tarih: todayTR(),
-    startText: nowTRTime()
-  };
+  d.personel = personel;
+  d.active = { personel, startEpoch: Date.now(), start: timeTR(), tarih: todayTR() };
+  saveData(d);
 
-  saveData(data);
+  // ✅ Sheet’e başlangıç yaz
+  sendStart(personel);
 
-  // ✅ Müdür takibi için Sheet'e başlangıç yaz
-  sendStartToSheet(name);
-
-  updateUI();
-  startTick();
+  update();
+  tick();
 });
 
-btnStop.addEventListener("click", () => {
-  const data = loadData();
-  if (!data.active) return;
+btnStop.addEventListener("click", ()=>{
+  const d = loadData();
+  if(!d.active) return;
 
-  const endEpoch = Date.now();
-  const durationMs = endEpoch - data.active.startEpoch;
+  const end = timeTR();
+  const ms = Date.now() - d.active.startEpoch;
 
-  const session = {
-    personel: data.active.personel,
-    tarih: data.active.tarih,
-    start: data.active.startText,
-    end: nowTRTime(),
-    durationMs
-  };
-
-  data.sessions.push(session);
-  data.active = null;
-
-  saveData(data);
-  stopTick();
-  updateUI();
-});
-
-btnReset.addEventListener("click", () => {
-  const data = loadData();
-  data.active = null;
-  saveData(data);
-  stopTick();
-  updateUI();
-});
-
-btnClearToday.addEventListener("click", () => {
-  if (!confirm("Bugünkü kayıtlar silinsin mi?")) return;
-  const data = loadData();
-  const today = todayTR();
-  data.sessions = data.sessions.filter(s => s.tarih !== today);
-  saveData(data);
-  updateUI();
-});
-
-btnExport.addEventListener("click", () => {
-  const data = loadData();
-  const today = todayTR();
-  const rows = [["personel","tarih","start","end","duration"]];
-  data.sessions.filter(s => s.tarih === today).forEach(s => {
-    rows.push([s.personel, s.tarih, s.start, s.end, formatMs(s.durationMs)]);
+  d.sessions.push({
+    personel: d.active.personel,
+    tarih: d.active.tarih,
+    start: d.active.start,
+    end,
+    ms
   });
 
-  const csv = rows.map(r => r.map(x => `"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `mesai_${today}.csv`;
-  a.click();
+  // ✅ Sheet’e bitiş yaz (opsiyonel)
+  sendEnd(d.active.personel);
+
+  d.active = null;
+  saveData(d);
+  update();
 });
 
-// init
-window.addEventListener("load", () => {
-  updateUI();
-  startTick();
+btnReset.addEventListener("click", ()=>{
+  const d = loadData();
+  d.active = null;
+  saveData(d);
+  update();
+});
+
+window.addEventListener("load", ()=>{
+  update();
+  tick();
 });
