@@ -1,569 +1,157 @@
 <!doctype html>
-<html lang="tr">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>EGM Mesai Takip Paneli - PRO</title>
-
+  <base target="_top">
+  <meta charset="utf-8" />
   <style>
-    :root{
-      --bg1:#06121f;
-      --bg2:#2b0b3b;
-      --card:rgba(255,255,255,.06);
-      --border:rgba(255,255,255,.12);
-      --text:#eaf0ff;
-      --muted:rgba(234,240,255,.7);
-      --btn:#1e293b;
-      --btn2:#334155;
-      --blue:#3b82f6;
-      --red:#ef4444;
-      --green:#22c55e;
-      --radius:18px;
-    }
-
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      color:var(--text);
-      background: radial-gradient(1200px 700px at 20% 10%, #123a6a 0%, transparent 55%),
-                  radial-gradient(1200px 700px at 80% 10%, #3a164f 0%, transparent 55%),
-                  linear-gradient(135deg,var(--bg1),var(--bg2));
-      min-height:100vh;
-      padding:28px 16px 40px;
-    }
-
-    .container{max-width:1080px;margin:0 auto}
-    .top{
-      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;
-      margin-bottom:16px;
-    }
-    h1{margin:0;font-size:30px;letter-spacing:.3px}
-    .sub{margin-top:6px;color:var(--muted);font-size:13px}
-    .status{
-      padding:10px 14px;border:1px solid var(--border);border-radius:999px;
-      background:rgba(255,255,255,.04); font-weight:700; min-width:120px; text-align:center;
-    }
-
-    .card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      padding:18px;
-      box-shadow:0 10px 30px rgba(0,0,0,.25);
-      backdrop-filter: blur(8px);
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1.2fr .7fr .7fr;
-      gap:14px;
-      margin-top:14px;
-    }
-    @media (max-width: 920px){
-      .grid{grid-template-columns:1fr}
-    }
-
-    .field label{display:block;color:var(--muted);font-size:12px;margin:0 0 6px}
-    input, select{
-      width:100%;
-      padding:12px 14px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.25);
-      color:var(--text);
-      outline:none;
-      font-size:15px;
-    }
-    input:focus, select:focus{border-color:rgba(59,130,246,.7); box-shadow:0 0 0 3px rgba(59,130,246,.15)}
-
-    .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-    button{
-      padding:11px 14px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.06);
-      color:var(--text);
-      cursor:pointer;
-      font-weight:700;
-      transition:.15s;
-    }
-    button:hover{transform:translateY(-1px);background:rgba(255,255,255,.09)}
-    button:disabled{opacity:.45;cursor:not-allowed;transform:none}
-
-    .btn-primary{border-color:rgba(59,130,246,.45); background:rgba(59,130,246,.20)}
-    .btn-primary:hover{background:rgba(59,130,246,.28)}
-    .btn-danger{border-color:rgba(239,68,68,.45); background:rgba(239,68,68,.16)}
-    .btn-danger:hover{background:rgba(239,68,68,.22)}
-    .btn-ghost{background:rgba(255,255,255,.04)}
-
-    .stat{
-      display:flex;flex-direction:column;gap:6px;
-      border-radius:14px; padding:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.18);
-      height:100%;
-    }
-    .stat .t{color:var(--muted);font-size:12px}
-    .stat .v{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:22px;font-weight:800}
-
-    .note{color:var(--muted);font-size:12px;margin-top:10px}
-
-    .section{margin-top:18px}
-    .section h2{margin:0 0 10px;font-size:18px}
-    .list{
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:16px;
-      overflow:hidden;
-      background:rgba(0,0,0,.16);
-    }
-    .rowItem{
-      display:flex;justify-content:space-between;gap:12px;
-      padding:14px 16px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-    }
-    .rowItem:last-child{border-bottom:none}
-    .who{font-weight:800}
-    .meta{color:var(--muted);font-size:12px;margin-top:6px}
-    .dur{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800}
-
-    .footer{
-      display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
-      margin-top:18px;color:var(--muted);font-size:12px
-    }
-
-    .toast{
-      margin-top:10px;
-      padding:12px 14px;
-      border-radius:14px;
-      border:1px solid rgba(96,255,156,.22);
-      background:rgba(96,255,156,.10);
-      display:none;
-      font-size:13px;
-      font-weight:700;
-    }
-    .toast.err{
-      border-color:rgba(255,59,88,.35);
-      background:rgba(255,59,88,.12);
-    }
+    body{font-family:Arial;margin:20px;background:#0b1220;color:#e6eefc}
+    .card{max-width:900px;margin:auto;background:#101b33;border:1px solid #22345f;border-radius:14px;padding:16px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input,select,button{padding:10px;border-radius:10px;border:1px solid #2a3f73;background:#0e1730;color:#e6eefc}
+    button{cursor:pointer}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border-bottom:1px solid #22345f;padding:10px;text-align:left}
+    .muted{opacity:.7}
   </style>
 </head>
-
 <body>
-<div class="container">
-
-  <div class="top">
-    <div>
-      <h1>EGM Mesai Takip Paneli</h1>
-      <div class="sub">Başlat / Durdur / Kayıt — günlük geçmiş ve toplam süre</div>
-    </div>
-    <div class="status" id="statusBadge">Hazır</div>
-  </div>
-
   <div class="card">
-    <div class="grid">
+    <h2>Mesai Takip (Müdür)</h2>
 
-      <div class="field">
-        <label>Personel Adı</label>
-        <input id="personelInput" placeholder="Personel adı girin" autocomplete="off"/>
-      </div>
+    <div class="row">
+      <label class="muted">Tarih:</label>
+      <input id="tarih" type="date">
 
-      <div class="field">
-        <label>Birim</label>
-        <select id="birimSelect">
-          <option value="">Birim seç</option>
-          <option>Asayiş</option>
-          <option>Trafik</option>
-          <option>Yunus</option>
-          <option>Sivil Asayiş</option>
-          <option>Narkotik</option>
-          <option>Personel Şube</option>
-        </select>
-      </div>
+      <select id="birim">
+        <option value="">Bütün Birimler</option>
+      </select>
 
-      <div class="stat">
-        <div class="t">Bugünkü Toplam</div>
-        <div class="v" id="todayTotal">00:00:00</div>
-      </div>
+      <select id="personel">
+        <option value="">Bütün Personeller</option>
+      </select>
 
-      <div class="stat">
-        <div class="t">Aktif Sayaç</div>
-        <div class="v" id="activeTimer">00:00:00</div>
-      </div>
-
-      <div class="stat">
-        <div class="t">Durum</div>
-        <div class="v" id="stateText" style="font-size:18px;font-family:inherit">Mesai yok</div>
-      </div>
-
+      <button onclick="today()">Bugün</button>
+      <button onclick="search()">Ara</button>
+      <button onclick="clearAll()">Temizle</button>
     </div>
 
-    <div class="btnrow">
-      <button class="btn-primary" id="btnStart">Mesai Başlat</button>
-      <button class="btn-danger" id="btnStop" disabled>Mesai Bitir</button>
-      <button class="btn-ghost" id="btnReset">Sıfırla</button>
-
-      <div style="flex:1"></div>
-
-      <button id="btnCsv">CSV Dışa Aktar</button>
-      <button class="btn-danger" id="btnDeleteToday">Bugün Kayıt Sil</button>
+    <div class="row" style="margin-top:10px">
+      <button onclick="refreshLists()">Veri Yenile</button>
+      <span id="msg" class="muted"></span>
     </div>
 
-    <div class="note">
-      Not: Veriler cihazınızda saklanır (localStorage). Müdür takibi için “başlangıç/bitiş” kayıtları ayrıca Google Sheet’e yazılır.
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Personel (Birim)</th>
+          <th>Başlangıç</th>
+          <th>Bitiş</th>
+          <th>Tarih</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="4" class="muted">Henüz veri yok.</td></tr>
+      </tbody>
+    </table>
 
-    <div class="toast" id="toast"></div>
+    <div class="muted" id="count" style="margin-top:8px">Kayıt sayısı: 0</div>
   </div>
-
-  <div class="card section">
-    <h2>Bugün Yapılan Mesailer</h2>
-    <div class="list" id="historyList">
-      <div class="rowItem"><div class="meta">Henüz mesai kaydı yok.</div></div>
-    </div>
-  </div>
-
-  <div class="footer">
-    <div>EGM Mesai Takip Paneli - PRO</div>
-    <div id="ver">v2 (birim seçmeli)</div>
-  </div>
-</div>
 
 <script>
-/** ==========================
- *  AYAR: Apps Script WebApp URL
- *  ==========================
- *  Buraya kendi web app linkini yaz.
- *  Örnek:
- *  https://script.google.com/macros/s/AKfycb.../exec
- */
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyn0rV5vGhLr3u82SPcGwMkIx3ZvzJHnOOfj38wcJwAEYOd0kExEEnHaVJvRVp3Gcdh/exec";
+  function setMsg(t){ document.getElementById('msg').textContent = t || ''; }
 
-/** ==========================
- *  LOCAL STORAGE
- *  ========================== */
-const STORAGE_KEY = "egmMesaiDataV2";
-
-function loadData(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return { personel:"", birim:"", sessions:[] };
-    const d = JSON.parse(raw);
-    if(!d.sessions) d.sessions = [];
-    if(!("birim" in d)) d.birim = "";
-    return d;
-  }catch(e){
-    return { personel:"", birim:"", sessions:[] };
-  }
-}
-function saveData(d){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
-}
-
-/** ==========================
- *  TIME HELPERS (TR / Istanbul)
- *  ========================== */
-function trNow(){
-  // Tarayıcı farklarını azaltmak için TR timezone string üzerinden Date oluşturuyoruz.
-  const now = new Date();
-  return new Date(now.toLocaleString("en-US",{timeZone:"Europe/Istanbul"}));
-}
-function fmt2(n){ return String(n).padStart(2,"0"); }
-function fmtTimeFromMs(ms){
-  ms = Math.max(0, ms|0);
-  const total = Math.floor(ms/1000);
-  const h = Math.floor(total/3600);
-  const m = Math.floor((total%3600)/60);
-  const s = total%60;
-  return `${fmt2(h)}:${fmt2(m)}:${fmt2(s)}`;
-}
-function todayISO(){
-  return trNow().toISOString().slice(0,10); // yyyy-mm-dd
-}
-function nowHHMMSS(){
-  const d = trNow();
-  return `${fmt2(d.getHours())}:${fmt2(d.getMinutes())}:${fmt2(d.getSeconds())}`;
-}
-function toLocalHM(ts){
-  const d = new Date(ts);
-  return `${fmt2(d.getHours())}:${fmt2(d.getMinutes())}:${fmt2(d.getSeconds())}`;
-}
-
-/** ==========================
- *  UI ELEMENTS
- *  ========================== */
-const personelInput = document.getElementById("personelInput");
-const birimSelect   = document.getElementById("birimSelect");
-const btnStart      = document.getElementById("btnStart");
-const btnStop       = document.getElementById("btnStop");
-const btnReset      = document.getElementById("btnReset");
-const btnCsv        = document.getElementById("btnCsv");
-const btnDeleteToday= document.getElementById("btnDeleteToday");
-
-const todayTotalEl  = document.getElementById("todayTotal");
-const activeTimerEl = document.getElementById("activeTimer");
-const historyListEl = document.getElementById("historyList");
-const statusBadge   = document.getElementById("statusBadge");
-const stateText     = document.getElementById("stateText");
-const toastEl       = document.getElementById("toast");
-
-/** ==========================
- *  STATE
- *  ========================== */
-let startTime = null;     // ms timestamp
-let interval  = null;     // timer interval id
-let elapsedMs = 0;
-
-/** ==========================
- *  TOAST
- *  ========================== */
-function toast(msg, isErr=false){
-  toastEl.classList.toggle("err", !!isErr);
-  toastEl.textContent = msg;
-  toastEl.style.display = "block";
-  setTimeout(()=> toastEl.style.display="none", 2000);
-}
-
-/** ==========================
- *  SHEET'E YAZMA (CORS güvenli)
- *  ========================== */
-function pingWebApp(action, params){
-  if(!WEBAPP_URL || WEBAPP_URL.includes("BURAYA_WEBAPP_URL_YAZ")){
-    // URL yoksa sadece local çalışsın
-    return;
-  }
-  const url = new URL(WEBAPP_URL);
-  url.searchParams.set("action", action);
-  Object.entries(params||{}).forEach(([k,v])=>{
-    url.searchParams.set(k, String(v ?? ""));
-  });
-
-  // 1) sendBeacon (en sağlam)
-  try{
-    const ok = navigator.sendBeacon(url.toString());
-    if(ok) return;
-  }catch(e){}
-
-  // 2) fetch no-cors (response okuyamasak bile gönderir)
-  try{
-    fetch(url.toString(), { method:"GET", mode:"no-cors", cache:"no-store" });
-  }catch(e){}
-}
-
-/** ==========================
- *  RENDER
- *  ========================== */
-function render(){
-  const data = loadData();
-
-  // inputları doldur
-  if(!personelInput.value) personelInput.value = data.personel || "";
-  if(!birimSelect.value) birimSelect.value = data.birim || "";
-
-  // bugün kayıtları
-  const today = todayISO();
-  const todaySessions = (data.sessions||[]).filter(s => (s.date === today));
-
-  // bugün toplam
-  const total = todaySessions.reduce((acc,s)=> acc + (s.duration||0), 0);
-  todayTotalEl.textContent = fmtTimeFromMs(total);
-
-  // liste
-  if(todaySessions.length === 0){
-    historyListEl.innerHTML = `<div class="rowItem"><div class="meta">Henüz mesai kaydı yok.</div></div>`;
-  }else{
-    historyListEl.innerHTML = todaySessions.map(s=>{
-      const st = toLocalHM(s.start);
-      const en = toLocalHM(s.end);
-      const dur = fmtTimeFromMs(s.duration||0);
-      const who = (s.personel || "—");
-      const unit = (s.birim || "Birim yok");
-      return `
-        <div class="rowItem">
-          <div>
-            <div class="who">${escapeHtml(who)} <span style="opacity:.6;font-weight:700">(${escapeHtml(unit)})</span></div>
-            <div class="meta">${st} → ${en}</div>
-          </div>
-          <div class="dur">${dur}</div>
-        </div>
-      `;
-    }).join("");
+  function today(){
+    const d = new Date();
+    const iso = d.toISOString().slice(0,10);
+    document.getElementById('tarih').value = iso;
   }
 
-  // aktif durum
-  if(startTime){
-    statusBadge.textContent = "Mesai açık";
-    stateText.textContent = "Mesai açık";
-    btnStart.disabled = true;
-    btnStop.disabled = false;
-  }else{
-    statusBadge.textContent = "Hazır";
-    stateText.textContent = "Mesai yok";
-    btnStart.disabled = false;
-    btnStop.disabled = true;
-    activeTimerEl.textContent = "00:00:00";
+  function clearAll(){
+    document.getElementById('tarih').value = '';
+    document.getElementById('birim').value = '';
+    document.getElementById('personel').value = '';
+    render([]);
   }
-}
 
-/** ==========================
- *  START/STOP
- *  ========================== */
-function startMesai(){
-  const personel = personelInput.value.trim();
-  const birim = birimSelect.value.trim();
+  function refreshLists(){
+    setMsg('Listeler yükleniyor...');
+    google.script.run
+      .withSuccessHandler(data => {
+        fillSelect('birim', data.birimler, 'Bütün Birimler');
+        fillSelect('personel', data.personeller, 'Bütün Personeller');
+        setMsg('Tamam');
+        setTimeout(()=>setMsg(''), 1200);
+      })
+      .withFailureHandler(err => {
+        console.error(err);
+        setMsg('Hata: ' + (err?.message || err));
+      })
+      .getLists();
+  }
 
-  if(!personel){ toast("Personel adı gir", true); return; }
-  if(!birim){ toast("Birim seç", true); return; }
-  if(startTime){ toast("Zaten mesai açık", true); return; }
+  function fillSelect(id, items, allText){
+    const sel = document.getElementById(id);
+    sel.innerHTML = `<option value="">${allText}</option>`;
+    (items||[]).forEach(x=>{
+      const opt = document.createElement('option');
+      opt.value = x;
+      opt.textContent = x;
+      sel.appendChild(opt);
+    });
+  }
 
-  // local kaydet
-  const data = loadData();
-  data.personel = personel;
-  data.birim = birim;
-  saveData(data);
+  function search(){
+    const filters = {
+      tarih: document.getElementById('tarih').value,
+      birim: document.getElementById('birim').value,
+      personel: document.getElementById('personel').value
+    };
+    setMsg('Aranıyor...');
+    google.script.run
+      .withSuccessHandler(rows => {
+        render(rows || []);
+        setMsg('Tamam');
+        setTimeout(()=>setMsg(''), 1200);
+      })
+      .withFailureHandler(err => {
+        console.error(err);
+        setMsg('Hata: ' + (err?.message || err));
+      })
+      .getMesaiList(filters);
+  }
 
-  startTime = trNow().getTime();
-  elapsedMs = 0;
+  function render(rows){
+    const tb = document.getElementById('tbody');
+    const count = document.getElementById('count');
+    if (!rows || rows.length === 0){
+      tb.innerHTML = `<tr><td colspan="4" class="muted">Henüz veri yok.</td></tr>`;
+      count.textContent = 'Kayıt sayısı: 0';
+      return;
+    }
+    tb.innerHTML = rows.map(r => `
+      <tr>
+        <td>${escapeHtml(r.personel)} <span class="muted">(${escapeHtml(r.birim)})</span></td>
+        <td>${escapeHtml(r.baslangic)}</td>
+        <td>${escapeHtml(r.bitis || '')}</td>
+        <td>${escapeHtml(r.tarih)}</td>
+      </tr>
+    `).join('');
+    count.textContent = 'Kayıt sayısı: ' + rows.length;
+  }
 
-  // sheet'e başlangıç yaz
-  pingWebApp("logStart", {
-    personel,
-    birim,
-    baslangic: nowHHMMSS(),
-    tarih: todayISO()
-  });
+  function escapeHtml(s){
+    return String(s||'')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+  }
 
-  // timer
-  interval = setInterval(()=>{
-    elapsedMs = trNow().getTime() - startTime;
-    activeTimerEl.textContent = fmtTimeFromMs(elapsedMs);
-  }, 250);
-
-  toast("Mesai başlatıldı ✅");
-  render();
-}
-
-function stopMesai(){
-  if(!startTime){ toast("Mesai açık değil", true); return; }
-
-  const end = trNow().getTime();
-  const dur = end - startTime;
-
-  const data = loadData();
-  const personel = (data.personel || personelInput.value.trim());
-  const birim = (data.birim || birimSelect.value.trim());
-
-  const session = {
-    personel,
-    birim,
-    date: todayISO(),
-    start: startTime,
-    end: end,
-    duration: dur
-  };
-
-  data.sessions = data.sessions || [];
-  data.sessions.push(session);
-  saveData(data);
-
-  // sheet'e bitiş yaz
-  pingWebApp("logEnd", {
-    personel,
-    bitis: nowHHMMSS(),
-    tarih: todayISO()
-  });
-
-  clearInterval(interval);
-  interval = null;
-  startTime = null;
-  elapsedMs = 0;
-  activeTimerEl.textContent = "00:00:00";
-
-  toast("Mesai bitti ✅");
-  render();
-}
-
-/** ==========================
- *  RESET / DELETE TODAY / CSV
- *  ========================== */
-function resetAll(){
-  if(interval) clearInterval(interval);
-  interval=null; startTime=null; elapsedMs=0;
-  localStorage.removeItem(STORAGE_KEY);
-  personelInput.value = "";
-  birimSelect.value = "";
-  toast("Sıfırlandı");
-  render();
-}
-
-function deleteToday(){
-  const data = loadData();
-  const today = todayISO();
-  data.sessions = (data.sessions||[]).filter(s => s.date !== today);
-  saveData(data);
-  toast("Bugün kayıtları silindi");
-  render();
-}
-
-function exportCsv(){
-  const data = loadData();
-  const rows = [["personel","birim","tarih","baslangic","bitis","sure"]];
-  (data.sessions||[]).forEach(s=>{
-    const st = new Date(s.start);
-    const en = new Date(s.end);
-    rows.push([
-      s.personel || "",
-      s.birim || "",
-      s.date || "",
-      `${fmt2(st.getHours())}:${fmt2(st.getMinutes())}:${fmt2(st.getSeconds())}`,
-      `${fmt2(en.getHours())}:${fmt2(en.getMinutes())}:${fmt2(en.getSeconds())}`,
-      fmtTimeFromMs(s.duration||0)
-    ]);
-  });
-
-  const csv = rows.map(r => r.map(x => `"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");
-  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `egm-mesai-${todayISO()}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  toast("CSV indirildi");
-}
-
-/** ==========================
- *  helpers
- *  ========================== */
-function escapeHtml(s){
-  return String(s ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#39;");
-}
-
-/** ==========================
- *  EVENTS
- *  ========================== */
-btnStart.addEventListener("click", startMesai);
-btnStop.addEventListener("click", stopMesai);
-btnReset.addEventListener("click", resetAll);
-btnDeleteToday.addEventListener("click", deleteToday);
-btnCsv.addEventListener("click", exportCsv);
-
-// birim/personel değişince localde sakla
-personelInput.addEventListener("change", ()=>{
-  const d=loadData(); d.personel=personelInput.value.trim(); saveData(d);
-});
-birimSelect.addEventListener("change", ()=>{
-  const d=loadData(); d.birim=birimSelect.value.trim(); saveData(d);
-});
-
-// ilk render
-render();
+  // ilk yükleme
+  today();
+  refreshLists();
+  search();
 </script>
 </body>
 </html>
-
