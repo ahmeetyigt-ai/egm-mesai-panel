@@ -62,8 +62,7 @@
 
   function today(){
     const d = new Date();
-    const iso = d.toISOString().slice(0,10);
-    document.getElementById('tarih').value = iso;
+    document.getElementById('tarih').value = d.toISOString().slice(0,10);
   }
 
   function clearAll(){
@@ -79,8 +78,7 @@
       .withSuccessHandler(data => {
         fillSelect('birim', data.birimler, 'Bütün Birimler');
         fillSelect('personel', data.personeller, 'Bütün Personeller');
-        setMsg('Tamam');
-        setTimeout(()=>setMsg(''), 1200);
+        setMsg('Tamam'); setTimeout(()=>setMsg(''), 1200);
       })
       .withFailureHandler(err => {
         console.error(err);
@@ -110,8 +108,7 @@
     google.script.run
       .withSuccessHandler(rows => {
         render(rows || []);
-        setMsg('Tamam');
-        setTimeout(()=>setMsg(''), 1200);
+        setMsg('Tamam'); setTimeout(()=>setMsg(''), 1200);
       })
       .withFailureHandler(err => {
         console.error(err);
@@ -130,16 +127,16 @@
     }
     tb.innerHTML = rows.map(r => `
       <tr>
-        <td>${escapeHtml(r.personel)} <span class="muted">(${escapeHtml(r.birim)})</span></td>
-        <td>${escapeHtml(r.baslangic)}</td>
-        <td>${escapeHtml(r.bitis || '')}</td>
-        <td>${escapeHtml(r.tarih)}</td>
+        <td>${esc(r.personel)} <span class="muted">(${esc(r.birim)})</span></td>
+        <td>${esc(r.baslangic)}</td>
+        <td>${esc(r.bitis || '')}</td>
+        <td>${esc(r.tarih)}</td>
       </tr>
     `).join('');
     count.textContent = 'Kayıt sayısı: ' + rows.length;
   }
 
-  function escapeHtml(s){
+  function esc(s){
     return String(s||'')
       .replaceAll('&','&amp;')
       .replaceAll('<','&lt;')
@@ -148,7 +145,6 @@
       .replaceAll("'","&#039;");
   }
 
-  // ilk yükleme
   today();
   refreshLists();
   search();
