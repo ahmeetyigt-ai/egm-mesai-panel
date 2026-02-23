@@ -5,149 +5,126 @@
   <meta charset="utf-8" />
   <style>
     body{font-family:Arial;margin:20px;background:#0b1220;color:#e6eefc}
-    .card{max-width:900px;margin:auto;background:#101b33;border:1px solid #22345f;border-radius:14px;padding:16px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .card{max-width:720px;margin:auto;background:#101b33;border:1px solid #22345f;border-radius:14px;padding:18px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
     input,select,button{padding:10px;border-radius:10px;border:1px solid #2a3f73;background:#0e1730;color:#e6eefc}
     button{cursor:pointer}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{border-bottom:1px solid #22345f;padding:10px;text-align:left}
-    .muted{opacity:.7}
+    .msg{margin-top:10px;padding:10px;border-radius:10px;background:#0e1730;border:1px solid #22345f}
+    .ok{border-color:#2d6a4f}
+    .err{border-color:#a4161a}
+    .muted{opacity:.75}
+    label{min-width:90px}
   </style>
 </head>
 <body>
   <div class="card">
-    <h2>Mesai Takip (Müdür)</h2>
+    <h2>Mesai Başlat / Bitir</h2>
+    <div class="muted">İsim yaz → Birim seç → Başlat. Bitir için aynı ismi seç/yaz.</div>
 
     <div class="row">
-      <label class="muted">Tarih:</label>
-      <input id="tarih" type="date">
+      <label>İsim:</label>
+      <input id="personel" list="plist" placeholder="örn: ahmet" />
+      <datalist id="plist"></datalist>
+    </div>
 
+    <div class="row">
+      <label>Birim:</label>
       <select id="birim">
-        <option value="">Bütün Birimler</option>
+        <option value="">Birim Seç</option>
+        <option>Asayiş</option>
+        <option>İdari</option>
+        <option>Destek</option>
       </select>
-
-      <select id="personel">
-        <option value="">Bütün Personeller</option>
-      </select>
-
-      <button onclick="today()">Bugün</button>
-      <button onclick="search()">Ara</button>
-      <button onclick="clearAll()">Temizle</button>
+      <span class="muted">(İstersen listeden seç veya yazılan kayıtlar arttıkça otomatik çıkar.)</span>
     </div>
 
-    <div class="row" style="margin-top:10px">
-      <button onclick="refreshLists()">Veri Yenile</button>
-      <span id="msg" class="muted"></span>
+    <div class="row">
+      <button onclick="start()">Mesai Başlat</button>
+      <button onclick="end()">Mesai Bitir</button>
+      <button onclick="reloadLists()">Liste Yenile</button>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Personel (Birim)</th>
-          <th>Başlangıç</th>
-          <th>Bitiş</th>
-          <th>Tarih</th>
-        </tr>
-      </thead>
-      <tbody id="tbody">
-        <tr><td colspan="4" class="muted">Henüz veri yok.</td></tr>
-      </tbody>
-    </table>
-
-    <div class="muted" id="count" style="margin-top:8px">Kayıt sayısı: 0</div>
+    <div id="msg" class="msg muted">Hazır.</div>
   </div>
 
 <script>
-  function setMsg(t){ document.getElementById('msg').textContent = t || ''; }
+  const msgEl = document.getElementById('msg');
 
-  function today(){
-    const d = new Date();
-    document.getElementById('tarih').value = d.toISOString().slice(0,10);
+  function setMsg(text, type){
+    msgEl.textContent = text;
+    msgEl.classList.remove('ok','err','muted');
+    msgEl.classList.add(type || 'muted');
   }
 
-  function clearAll(){
-    document.getElementById('tarih').value = '';
-    document.getElementById('birim').value = '';
-    document.getElementById('personel').value = '';
-    render([]);
+  function getForm(){
+    return {
+      personel: document.getElementById('personel').value.trim(),
+      birim: document.getElementById('birim').value.trim()
+    };
   }
 
-  function refreshLists(){
-    setMsg('Listeler yükleniyor...');
+  function start(){
+    const f = getForm();
+    setMsg('Kaydediliyor...', 'muted');
     google.script.run
-      .withSuccessHandler(data => {
-        fillSelect('birim', data.birimler, 'Bütün Birimler');
-        fillSelect('personel', data.personeller, 'Bütün Personeller');
-        setMsg('Tamam'); setTimeout(()=>setMsg(''), 1200);
+      .withSuccessHandler(res => {
+        setMsg(res.msg || 'Mesai başladı.', 'ok');
+        reloadLists();
       })
       .withFailureHandler(err => {
         console.error(err);
-        setMsg('Hata: ' + (err?.message || err));
+        setMsg('Hata: ' + (err?.message || err), 'err');
+      })
+      .startMesai(f);
+  }
+
+  function end(){
+    const f = getForm();
+    setMsg('Kapatılıyor...', 'muted');
+    google.script.run
+      .withSuccessHandler(res => {
+        setMsg(res.msg || 'Mesai bitti.', 'ok');
+        reloadLists();
+      })
+      .withFailureHandler(err => {
+        console.error(err);
+        setMsg('Hata: ' + (err?.message || err), 'err');
+      })
+      .endMesai({ personel: f.personel });
+  }
+
+  function reloadLists(){
+    google.script.run
+      .withSuccessHandler(data => {
+        const dl = document.getElementById('plist');
+        dl.innerHTML = '';
+        (data.personeller || []).forEach(p => {
+          const o = document.createElement('option');
+          o.value = p;
+          dl.appendChild(o);
+        });
+
+        // birimleri sheet'ten de ekleyelim (mevcut seçenekleri bozmadan)
+        const birimSel = document.getElementById('birim');
+        const existing = new Set([...birimSel.options].map(o => o.value).filter(Boolean));
+        (data.birimler || []).forEach(b => {
+          if (!existing.has(b)) {
+            const opt = document.createElement('option');
+            opt.value = b;
+            opt.textContent = b;
+            birimSel.appendChild(opt);
+            existing.add(b);
+          }
+        });
+      })
+      .withFailureHandler(err => {
+        console.error(err);
+        setMsg('Liste yenileme hatası: ' + (err?.message || err), 'err');
       })
       .getLists();
   }
 
-  function fillSelect(id, items, allText){
-    const sel = document.getElementById(id);
-    sel.innerHTML = `<option value="">${allText}</option>`;
-    (items||[]).forEach(x=>{
-      const opt = document.createElement('option');
-      opt.value = x;
-      opt.textContent = x;
-      sel.appendChild(opt);
-    });
-  }
-
-  function search(){
-    const filters = {
-      tarih: document.getElementById('tarih').value,
-      birim: document.getElementById('birim').value,
-      personel: document.getElementById('personel').value
-    };
-    setMsg('Aranıyor...');
-    google.script.run
-      .withSuccessHandler(rows => {
-        render(rows || []);
-        setMsg('Tamam'); setTimeout(()=>setMsg(''), 1200);
-      })
-      .withFailureHandler(err => {
-        console.error(err);
-        setMsg('Hata: ' + (err?.message || err));
-      })
-      .getMesaiList(filters);
-  }
-
-  function render(rows){
-    const tb = document.getElementById('tbody');
-    const count = document.getElementById('count');
-    if (!rows || rows.length === 0){
-      tb.innerHTML = `<tr><td colspan="4" class="muted">Henüz veri yok.</td></tr>`;
-      count.textContent = 'Kayıt sayısı: 0';
-      return;
-    }
-    tb.innerHTML = rows.map(r => `
-      <tr>
-        <td>${esc(r.personel)} <span class="muted">(${esc(r.birim)})</span></td>
-        <td>${esc(r.baslangic)}</td>
-        <td>${esc(r.bitis || '')}</td>
-        <td>${esc(r.tarih)}</td>
-      </tr>
-    `).join('');
-    count.textContent = 'Kayıt sayısı: ' + rows.length;
-  }
-
-  function esc(s){
-    return String(s||'')
-      .replaceAll('&','&amp;')
-      .replaceAll('<','&lt;')
-      .replaceAll('>','&gt;')
-      .replaceAll('"','&quot;')
-      .replaceAll("'","&#039;");
-  }
-
-  today();
-  refreshLists();
-  search();
+  reloadLists();
 </script>
 </body>
 </html>
